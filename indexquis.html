@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quiz rápido</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#181a1d">
+
+<!--
+  ===== META PIXEL =====
+  Cole aqui, dentro do <head>, o código base do seu Pixel (Gerenciador de Eventos > Pixel > Instalar código manualmente).
+  A página já dispara os eventos abaixo se o Pixel estiver instalado:
+    QuizStart (abriu o quiz), QuizStep (respondeu uma pergunta), QuizComplete (viu o resultado) e Lead (clicou no botão final).
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#181a1d; --card:#2c3035; --card-2:#363a40;
+    --green:#10b981; --green-soft:rgba(16,185,129,.16);
+    --white:#f5f5f5; --muted:#969ba0; --dark:#0e1012;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--white);
+    font-family:"Poppins",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    min-height:100dvh; display:flex; justify-content:center;
+    background-image:radial-gradient(circle at 80% 105%, rgba(16,185,129,.22), transparent 55%);
+    background-repeat:no-repeat;
+  }
+  .bar{position:fixed;top:0;left:0;right:0;height:8px;background:var(--green);z-index:5}
+  .wrap{
+    width:100%; max-width:480px; min-height:100dvh;
+    padding:40px 24px calc(28px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column;
+  }
+  .top{display:flex;align-items:center;justify-content:space-between;min-height:40px;margin-bottom:14px}
+  .tag{color:var(--green);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+  .pill{
+    border:2px solid var(--green);color:var(--green);font-weight:700;font-size:14px;
+    padding:6px 16px;border-radius:999px;
+  }
+  .progress{height:8px;background:var(--card);border-radius:999px;overflow:hidden;margin-bottom:34px}
+  .progress i{display:block;height:100%;width:0;background:var(--green);border-radius:999px;transition:width .35s ease}
+
+  #app{flex:1;display:flex;flex-direction:column}
+  .screen{flex:1;display:flex;flex-direction:column;animation:in .35s ease both}
+  @keyframes in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.screen{animation:none}.progress i{transition:none}}
+
+  h1{font-size:clamp(28px,8vw,36px);line-height:1.18;font-weight:800;letter-spacing:-.01em}
+  .lead{color:var(--muted);font-size:16px;line-height:1.55;margin-top:14px}
+  .lead b{color:var(--white);font-weight:600}
+  .grow{flex:1;min-height:24px}
+
+  .badge{
+    width:150px;height:150px;border-radius:50%;background:var(--green);color:var(--dark);
+    display:grid;place-items:center;margin:8px auto 28px;
+    font-size:104px;font-weight:800;line-height:1;box-shadow:0 0 0 12px var(--green-soft);
+  }
+  .badge svg{width:76px;height:76px}
+  .center{text-align:center}
+
+  .opts{display:flex;flex-direction:column;gap:14px;margin-top:30px}
+  .opt{
+    appearance:none;border:2px solid transparent;cursor:pointer;
+    width:100%;min-height:64px;padding:14px 22px;border-radius:999px;
+    background:var(--card);color:var(--white);
+    font:700 17px/1.2 "Poppins",system-ui,sans-serif;letter-spacing:.02em;text-transform:uppercase;
+    transition:transform .12s ease,background .15s ease,border-color .15s ease;
+  }
+  .opt:hover{border-color:var(--green)}
+  .opt:active{transform:scale(.98)}
+  .opt.sel{background:var(--green);color:var(--dark);border-color:var(--green)}
+  .opt:focus-visible,.cta:focus-visible,.back:focus-visible{outline:3px solid var(--white);outline-offset:3px}
+
+  .cta{
+    appearance:none;border:0;cursor:pointer;text-decoration:none;
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    width:100%;min-height:68px;border-radius:999px;background:var(--green);color:var(--dark);
+    font:800 19px/1 "Poppins",system-ui,sans-serif;letter-spacing:.02em;text-transform:uppercase;
+    box-shadow:0 10px 30px rgba(16,185,129,.28);transition:transform .12s ease,filter .15s ease;
+  }
+  .cta:hover{filter:brightness(1.06)} .cta:active{transform:scale(.98)}
+  .cta svg{width:24px;height:24px}
+
+  .back{
+    appearance:none;background:none;border:0;color:var(--muted);cursor:pointer;
+    font:500 14px "Poppins",system-ui,sans-serif;margin:22px auto 0;padding:6px 10px;
+  }
+  .back[hidden]{display:none}
+
+  .trust{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:26px;color:var(--muted);
+    font-weight:500;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+  .trust div{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+  .trust span{display:inline-flex;align-items:center;gap:8px}
+  .trust svg{width:16px;height:16px;stroke:var(--green);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+  .chips span{border:1.5px solid var(--green);color:var(--white);background:var(--green-soft);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600}
+  .hook{margin:22px 0 14px;font-weight:600;font-size:15px;line-height:1.4}
+  .pulse{animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 10px 30px rgba(16,185,129,.28)}50%{box-shadow:0 10px 38px rgba(16,185,129,.6),0 0 0 8px rgba(16,185,129,.14)}}
+  @media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+  .inc-title{margin-top:26px;color:var(--green);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+  .inc{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:10px;text-align:left}
+  .inc li{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:18px;padding:14px 16px;font-weight:600;font-size:15px;line-height:1.35}
+  .inc li span{flex:none;width:30px;height:30px;border-radius:50%;background:var(--green);color:var(--dark);display:grid;place-items:center}
+  .inc li svg{width:16px;height:16px}
+  .price{margin:22px auto 0;padding:16px 28px;border:2px solid var(--green);border-radius:24px;background:var(--green-soft);display:inline-flex;flex-direction:column;gap:2px}
+  .price small{color:var(--muted);font-size:13px;font-weight:500;letter-spacing:.08em;text-transform:uppercase}
+  .price strong{color:var(--green);font-size:40px;font-weight:800;line-height:1.1}
+  .disc{color:var(--muted);font-size:12px;text-align:center;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="bar"></div>
+
+<main class="wrap">
+  <div class="top">
+    <span class="tag" id="tag">Responda rápido</span>
+    <span class="pill" id="count" hidden></span>
+  </div>
+  <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+
+  <section id="app" aria-live="polite"></section>
+
+  <button class="back" id="back" type="button" hidden>&larr; Voltar</button>
+
+  <div class="trust">
+    <span><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Dados protegidos</span>
+    <div>
+      <span><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Resultado imediato</span>
+      <span><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>Leva 30 segundos</span>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ================= CONFIGURAÇÃO ================= */
+const CONFIG = {
+  // TROQUE pelo seu número de WhatsApp: código do país + DDD + número, só dígitos (ex.: 5568999999999)
+  WHATSAPP: "5568999253629",
+  // Mensagem que já aparece escrita para a pessoa enviar:
+  // Início da mensagem. As respostas do quiz são anexadas automaticamente depois dela.
+  WA_MESSAGE: "Olá! Fiz o quiz e quero ver como funciona o método para conseguir mais indicações no TikTok Lite.",
+  WA_ENDING: "Pode me explicar como funciona?",
+  // Ganchos da última tela:
+  HOOK_GOOD_SUB: "Você já tem o essencial. Falta só dar o primeiro passo.",
+  HOOK_LOW_SUB: "O método foi feito para quem está começando agora.",
+  CHIPS: ["Sem mostrar o rosto", "No seu tempo livre", "Só com o celular e o notebook"],
+  HOOK_CTA: "Toque no botão e me mande a mensagem. Eu te explico tudo por lá.",
+  PRICE: "R$ 65,99",
+  // O que vem no método (aparece como lista na tela de resultado):
+  INCLUDES: [
+    "Ensino tudo, do zero, passo a passo",
+    "Ferramentas necessárias, sem custo extra",
+    "Fornecedores necessários para rodar o método"
+  ],
+  PRICE_LABEL: "Método completo por",
+  CTA_TEXT: "Venha ver como funciona"
+};
+
+const QUESTIONS = [
+  { q: "Você tem um celular e 30 minutos livres por dia?",
+    opts: [ {t:"Sim", pos:true}, {t:"Não", pos:false} ] },
+  { q: "Você já usou o TikTok Lite?",
+    opts: [ {t:"Já usei", pos:true}, {t:"Nunca usei", pos:false} ] },
+  { q: "O que você mais quer?",
+    opts: [ {t:"Renda extra", pos:true}, {t:"Trabalhar de casa", pos:true}, {t:"Só curiosidade", pos:false} ] }
+];
+
+/* ================= LÓGICA ================= */
+const $app = document.getElementById("app");
+const $tag = document.getElementById("tag");
+const $count = document.getElementById("count");
+const $prog = document.getElementById("prog");
+const $back = document.getElementById("back");
+
+let step = -1;          // -1 = capa, 0..n-1 = perguntas, n = resultado
+let picks = [];         // respostas (índice da opção) por pergunta
+const N = QUESTIONS.length;
+
+function track(name, data, standard){
+  try{
+    if(!window.fbq) return;
+    if(standard) fbq("track", name, data || {});
+    else fbq("trackCustom", name, data || {});
+  }catch(e){}
+}
+
+function targetUrl(){
+  // abre o WhatsApp direto na sua conversa, com a mensagem já escrita
+  var linhas = [CONFIG.WA_MESSAGE, ""];
+  QUESTIONS.forEach(function(q,i){
+    var p = picks[i];
+    if(p !== undefined) linhas.push((i+1) + ") " + q.q + " " + q.opts[p].t);
+  });
+  linhas.push("", CONFIG.WA_ENDING);
+  return "https://wa.me/" + CONFIG.WHATSAPP.replace(/\D/g,"") + "?text=" + encodeURIComponent(linhas.join("\n"));
+}
+
+const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+
+function setHeader(){
+  const showCount = step >= 0 && step < N;
+  $count.hidden = !showCount;
+  if(showCount) $count.textContent = (step+1) + "/" + N;
+  $tag.textContent = step === N ? "Seu resultado" : "Responda rápido";
+  const pct = step < 0 ? 0 : Math.min(100, Math.round(((step+ (step===N?0:0)) / N) * 100));
+  $prog.style.width = (step === N ? 100 : (step < 0 ? 0 : ((step+1)/N)*100 - 100/N + 0)) + "%";
+  if(step >= 0 && step < N) $prog.style.width = (((step+1)/N)*100) + "%";
+  $back.hidden = !(step >= 0 && step <= N);
+}
+
+function render(){
+  setHeader();
+  if(step === -1) return renderCover();
+  if(step < N)    return renderQuestion();
+  return renderResult();
+}
+
+function renderCover(){
+  $app.innerHTML =
+    '<div class="screen center">' +
+      '<div class="badge" aria-hidden="true">?</div>' +
+      '<h1>Isso é para você?</h1>' +
+      '<p class="lead">Responda <b>3 perguntas rápidas</b> e veja se o método combina com o seu perfil.</p>' +
+      '<div class="grow"></div>' +
+      '<button class="cta" id="start" type="button">Começar ' + ARROW + '</button>' +
+    '</div>';
+  document.getElementById("start").onclick = function(){
+    track("QuizStart"); step = 0; render();
+  };
+}
+
+function renderQuestion(){
+  const item = QUESTIONS[step];
+  let html = '<div class="screen"><h1>' + item.q + '</h1><div class="opts">';
+  item.opts.forEach(function(o,i){
+    html += '<button class="opt' + (picks[step]===i ? ' sel' : '') + '" type="button" data-i="' + i + '">' + o.t + '</button>';
+  });
+  html += '</div><div class="grow"></div></div>';
+  $app.innerHTML = html;
+  $app.querySelectorAll(".opt").forEach(function(b){
+    b.onclick = function(){
+      const i = +b.dataset.i;
+      picks[step] = i;
+      b.classList.add("sel");
+      track("QuizStep", { pergunta: step+1, resposta: item.opts[i].t });
+      setTimeout(function(){ step++; render(); if(step===N) track("QuizComplete", { score: score() }); }, 260);
+    };
+  });
+}
+
+function score(){
+  let s = 0;
+  picks.forEach(function(p,qi){ if(QUESTIONS[qi].opts[p] && QUESTIONS[qi].opts[p].pos) s++; });
+  return s;
+}
+
+function renderResult(){
+  const good = score() >= 2;
+  const title = good ? "Esse método combina com você." : "Dá para começar do zero.";
+  const text  = good ? CONFIG.HOOK_GOOD_SUB : CONFIG.HOOK_LOW_SUB;
+  $app.innerHTML =
+    '<div class="screen center">' +
+      '<div class="badge" aria-hidden="true">' + CHECK + '</div>' +
+      '<h1>' + title + '</h1>' +
+      '<p class="lead">' + text + '</p>' +
+      '<div class="chips">' + CONFIG.CHIPS.map(function(t){ return '<span>' + t + '</span>'; }).join("") + '</div>' +
+      '<p class="inc-title">O que você recebe</p>' +
+      '<ul class="inc">' + CONFIG.INCLUDES.map(function(t){ return '<li><span>' + CHECK + '</span>' + t + '</li>'; }).join("") + '</ul>' +
+      '<div class="price"><small>' + CONFIG.PRICE_LABEL + '</small><strong>' + CONFIG.PRICE + '</strong></div>' +
+      '<div class="grow"></div>' +
+      '<p class="hook">' + CONFIG.HOOK_CTA + '</p>' +
+      '<a class="cta pulse" id="go" href="' + targetUrl() + '">' + CONFIG.CTA_TEXT + ' ' + ARROW + '</a>' +
+      '<p class="disc">Você será direcionado ao WhatsApp. O resultado varia de pessoa para pessoa.</p>' +
+    '</div>';
+  document.getElementById("go").addEventListener("click", function(){ track("Lead", {}, true); });
+}
+
+$back.onclick = function(){
+  if(step > -1){ step--; render(); }
+};
+
+render();
+</script>
+</body>
+</html>
